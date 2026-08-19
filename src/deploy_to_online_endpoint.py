@@ -43,22 +43,19 @@ def get_ml_client(subscription_id: str, resource_group: str, workspace: str) -> 
         resource_group_name=resource_group,
         workspace_name=workspace,
     )
-  
+
+
 def ensure_endpoint(ml_client: MLClient, endpoint_name: str) -> ManagedOnlineEndpoint:
     try:
-        endpoint = ml_client.online_endpoints.get(name=endpoint_name)
-        return endpoint
-    except Exception:
-        unique_suffix = datetime.datetime.now().strftime("%m%d%H%M%f")
-        name = endpoint_name or f"endpoint-{unique_suffix}"
-
+        return ml_client.online_endpoints.get(name=endpoint_name)
+    except ResourceNotFoundError:
         endpoint = ManagedOnlineEndpoint(
-            name=name,
+            name=endpoint_name,
             description="Online endpoint for MLflow diabetes model",
             auth_mode="key",
         )
+        return ml_client.online_endpoints.begin_create_or_update(endpoint).result()
 
-        return ml_client.begin_create_or_update(endpoint).result()
 
 def create_or_update_deployment(
     ml_client: MLClient,
@@ -75,7 +72,7 @@ def create_or_update_deployment(
         name=deployment_name,
         endpoint_name=endpoint_name,
         model=model,
-        instance_type="STANDARD_DS11_V2",
+        instance_type="Standard_D2as_v4",
         instance_count=1,
         data_collector=get_data_collector(),
     )
